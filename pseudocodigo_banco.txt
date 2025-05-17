@@ -1,0 +1,41 @@
+INÍCIO
+
+  // 1. Inicialização
+  Definir senha correta, saldo inicial (0), limite de saque (500), histórico (vazio), contador de saques (0), limite de saques diários (3).
+
+  // 2. Funções Auxiliares (Opcional)
+  FUNÇÃO tocar_erro: Emitir som de erro.
+  FUNÇÃO tocar_sucesso_deposito: Emitir som de sucesso para depósito.
+  FUNÇÃO tocar_sucesso_saque: Emitir som de sucesso para saque.
+  FUNÇÃO tocar_despedida: Emitir sons de despedida.
+
+  // 3. Autenticação
+  Solicitar senha; Se incorreta, exibir erro, tocar som de erro e sair.
+
+  // 4. Loop Principal
+  ENQUANTO usuário não sair:
+    Exibir menu (Depositar, Sacar, Extrato, Sair).
+    Ler opção do usuário.
+
+    // 5. Processar Opção
+    SE opção for "d" (Depositar):
+      Solicitar valor; Tentar converter para número; Se válido e positivo, atualizar saldo e extrato, tocar som de sucesso, exibir mensagem. Senão, exibir erro e tocar som de erro.
+
+    SENÃO SE opção for "s" (Sacar):
+      Solicitar valor; Tentar converter para número; Se válido e positivo:
+        Verificar saldo; Se insuficiente, exibir erro e tocar som de erro.
+        Verificar limite de saque; Se excedido, exibir erro e tocar som de erro.
+        Verificar limite de saques diários; Se atingido, exibir erro e tocar som de erro.
+        Senão, subtrair do saldo, atualizar extrato, incrementar contador de saques, tocar som de sucesso, exibir mensagem.
+      Senão, exibir erro e tocar som de erro.
+
+    SENÃO SE opção for "e" (Extrato):
+      Exibir cabeçalho "EXTRATO"; Se extrato vazio, exibir mensagem; Senão, exibir extrato; Exibir saldo atual.
+
+    SENÃO SE opção for "q" (Sair):
+      Exibir agradecimento, tocar som de despedida, sair do loop.
+
+    SENÃO (opção inválida):
+      Exibir erro e tocar som de erro.
+
+FIM!!
