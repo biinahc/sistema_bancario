@@ -21,7 +21,7 @@ Este é um simulador bancário desenvolvido em Python para fins de aprendizado e
 
 Certifique-se de ter o Python instalado no seu sistema. Você pode baixá-lo [aqui](https://www.python.org/downloads/).
 
-### 🔽 Download do Repositório
+## 🔽 Download do Repositório
 
 Baixe o repositório para o seu computador utilizando Git:
 
