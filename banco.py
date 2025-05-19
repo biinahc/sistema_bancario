@@ -1,18 +1,15 @@
 import os
 import winsound
-
+from datetime import datetime
 
 senha_correta = "1234"
-
 
 def tocar_erro():
     winsound.Beep(400, 500)  
 
-
 def tocar_despedida():
     winsound.Beep(1000, 500)  
     winsound.Beep(1200, 500)
-
 
 senha = input("🔑 Digite sua senha para acessar o banco: ")
 if senha != senha_correta:
@@ -20,25 +17,31 @@ if senha != senha_correta:
     tocar_erro()
     exit()
 
-
 saldo = 0.0
 limite = 500.0
 extrato = ""
 numero_saques = 0
 LIMITE_SAQUES = 3
+numero_transacoes = 0
+LIMITE_TRANSACOES = 10
 
-menu = """
-💳 MENU DO BANCO
+menu = """ 
+💳 MENU DO BANCO 
 
-[d] 💰 Depositar
-[s] 💸 Sacar
-[e] 📜 Extrato
-[q] ❌ Sair
+[d] 💰 Depositar 
+[s] 💸 Sacar 
+[e] 📜 Extrato 
+[q] ❌ Sair 
 
-=> """
+=> """ 
 
 while True:
     opcao = input(menu).strip().lower()
+
+    if opcao in ["d", "s"] and numero_transacoes >= LIMITE_TRANSACOES:
+        print("\n❌ Operação falhou! Você atingiu o número máximo de transações diárias.\n")
+        tocar_erro()
+        
 
     if opcao == "d":
         try:
@@ -50,7 +53,9 @@ while True:
 
         if valor > 0:
             saldo += valor
-            extrato += f"✅ Depósito: R$ {valor:.2f}\n"
+            data_hora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            extrato += f"✅ Depósito: R$ {valor:.2f} | Data e Hora: {data_hora}\n"
+            numero_transacoes += 1
             winsound.Beep(1000, 500)
             print(f"\n✨ Depósito realizado com sucesso! Novo saldo: R$ {saldo:.2f} ✨\n")
         else:
@@ -76,8 +81,10 @@ while True:
             tocar_erro()
         elif valor > 0:
             saldo -= valor
-            extrato += f"🔻 Saque: R$ {valor:.2f}\n"
+            data_hora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            extrato += f"🔻 Saque: R$ {valor:.2f} | Data e Hora: {data_hora}\n"
             numero_saques += 1
+            numero_transacoes += 1
             winsound.Beep(800, 500)
             print(f"\n💸 Saque realizado com sucesso! Novo saldo: R$ {saldo:.2f} 🏦\n")
         else:
