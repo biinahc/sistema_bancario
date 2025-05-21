@@ -44,20 +44,12 @@ Este é um simulador de banco desenvolvido em Python com o objetivo de aprendiza
 
 ---
 
-## 📦 Como Executar
-
-1. **Clone o repositório:**
-
-```bash
-git clone https://github.com/biinahc/Sistema-Bancario.git
-cd Sistema-Bancario
-
-📢 Observações
+## 📢 Observações
 O sistema não salva dados em arquivos ou banco de dados. Tudo é armazenado na memória durante a execução.
 
 A biblioteca winsound funciona apenas no Windows. Em outros sistemas, os sons não serão emitidos, mas o programa continuará funcionando normalmente.
 
-## Autor
+## Autora
 
 [Biinahc](https://github.com/biinahc)
 
