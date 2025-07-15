@@ -2,6 +2,27 @@ import winsound
 from datetime import datetime
 from abc import ABC, abstractmethod
 
+
+def log_transacao(funcao):
+    """
+    Decorador que registra em console a data, hora e tipo de uma transação
+    no momento em que ela é executada.
+    """
+    def wrapper(*args, **kwargs):
+       
+        conta = args[1]
+        transacao = args[2]
+        
+        resultado = funcao(*args, **kwargs) 
+       
+        if transacao.__class__.__name__ in [t['tipo'] for t in conta.historico.transacoes]:
+             print(
+                f"--- LOG: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')} | "
+                f"Transação '{transacao.__class__.__name__}' executada para a conta {conta.numero}. ---"
+             )
+        return resultado
+    return wrapper
+
 # --- Efeitos Sonoros (mantidos do código original) ---
 
 def tocar_sucesso():
@@ -39,6 +60,17 @@ class Historico:
                 "data": timestamp,
             }
         )
+
+    # --- NOVO: Gerador de Relatórios ---
+    def gerar_relatorio(self, tipo_transacao=None):
+        """
+        Gera um relatório de transações, opcionalmente filtrado por tipo.
+        Usa 'yield' para retornar uma transação de cada vez.
+        """
+        for transacao in self._transacoes:
+            if tipo_transacao is None or transacao["tipo"].lower() == tipo_transacao.lower():
+                yield transacao
+
 
 class Transacao(ABC):
     """Classe abstrata para todas as transações."""
@@ -173,8 +205,23 @@ class Cliente:
         self.endereco = endereco
         self.contas = []
 
+    # --- ALTERADO: Decorador e limite diário aplicados ---
+    @log_transacao
     def realizar_transacao(self, conta, transacao):
-        """Inicia o processo de uma transação."""
+        """
+        Inicia o processo de uma transação, agora com validação de limite diário.
+        """
+        # --- NOVO: Validação do limite de 10 transações diárias ---
+        hoje = datetime.now().date()
+        transacoes_hoje = [
+            t for t in conta.historico.transacoes
+            if datetime.strptime(t['data'], '%d/%m/%Y %H:%M:%S').date() == hoje
+        ]
+        if len(transacoes_hoje) >= 10:
+            print("\n❌ Você excedeu o número de 10 transações permitidas para hoje.")
+            tocar_erro()
+            return
+
         transacao.registrar(conta)
 
     def adicionar_conta(self, conta):
@@ -251,6 +298,49 @@ def menu_exibir_extrato(cliente):
     print("🔷============================🔷\n")
 
 
+
+# --- NOVO: Função para o menu do Gerador de Relatórios ---
+def menu_gerar_relatorio(cliente):
+    """
+    Exibe um relatório de transações usando o gerador, com opção de filtro.
+    """
+    if not cliente.contas:
+        print("🚫 Cliente não possui conta.")
+        tocar_erro()
+        return
+
+    conta_ativa = cliente.contas[0]
+    
+    tipo_filtro = input("🔎 Deseja filtrar por tipo? (d para depósito, s para saque, ou enter para todos): ").lower().strip()
+    
+    if tipo_filtro == 'd':
+        filtro = "Deposito"
+    elif tipo_filtro == 's':
+        filtro = "Saque"
+    else:
+        filtro = None
+
+    print("\n📑 === RELATÓRIO DE TRANSAÇÕES === 📑")
+    
+
+
+    # Utiliza o gerador para obter as transações
+
+
+    relatorio = conta_ativa.historico.gerar_relatorio(filtro)
+    
+    houve_transacao = False
+    for transacao in relatorio:
+        houve_transacao = True
+        tipo = "🔻 Saque" if transacao['tipo'] == 'Saque' else "✅ Depósito"
+        print(f"{tipo}: R$ {transacao['valor']:.2f} | Data: {transacao['data']}")
+
+    if not houve_transacao:
+        print("🚫 Nenhuma transação encontrada para este filtro.")
+
+    print("🔷=================================🔷\n")
+
+
 def criar_novo_cliente(clientes):
     """Cria e cadastra um novo cliente (Pessoa Física)."""
     cpf = input("🔎 Informe o CPF (somente números): ").strip()
@@ -311,14 +401,15 @@ def login(clientes):
     tocar_erro()
     return None
 
-# --- Bloco Principal de Execução ---
+
+#execução do sistema
 
 def main():
     """Função principal que executa o sistema bancário."""
     clientes = []
     contas = []
     
-    # Loop de Login/Criação de Usuário
+    # Login/Criação de Usuário
     cliente_logado = None
     while not cliente_logado:
         print("""
@@ -342,13 +433,13 @@ def main():
             print("❌ Opção inválida!")
             tocar_erro()
 
-    # Loop do Menu Principal (após login)
     menu = """
 💳 MENU DO BANCO SC
 
 [d] 💰 Depositar
 [s] 💸 Sacar
 [e] 📜 Extrato
+[r] 📑 Gerar Relatório
 [u] 👤 Criar Novo Cliente
 [c] 🏦 Criar Nova Conta
 [q] ❌ Sair
@@ -364,6 +455,9 @@ def main():
             menu_saque(cliente_logado)
         elif opcao == "e":
             menu_exibir_extrato(cliente_logado)
+        # --- NOVO: Chamada para a função do relatório ---
+        elif opcao == "r":
+            menu_gerar_relatorio(cliente_logado)
         elif opcao == "u":
             criar_novo_cliente(clientes)
         elif opcao == "c":

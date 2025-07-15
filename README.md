@@ -34,9 +34,17 @@ Este é um simulador de banco desenvolvido em Python com o objetivo de aprendiza
 - **🖥️ Interface CLI (Linha de Comando):**
   - Menu interativo com opções diretas
   - Navegação simples e orientada
+- **📑 Gerador de Relatórios:**
+  - Permite gerar uma lista de transações de forma otimizada
+  - Oferece a opção de filtrar o relatório por tipo (ver apenas depósitos ou apenas saques)
+- **🛡️ Limite de Segurança Diário:**
+  - Cada conta pode realizar no máximo 10 transações por dia (somando saques e depósitos)
+  - O sistema informa o usuário ao atingir este limite
+- **🔍 Auditoria Automática (Log):**
+  - Cada transação executada é registrada com data e hora exatas em um log impresso no console
+  - Facilita o rastreamento e a verificação de todas as operações
 
 ---
-
 ## 🧰 Pré-requisitos
 
 - **Python 3.6+**
