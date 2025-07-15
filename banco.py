@@ -2,42 +2,76 @@ import winsound
 from datetime import datetime
 from abc import ABC, abstractmethod
 
-
+# --- DECORADOR MODIFICADO ---
 def log_transacao(funcao):
     """
-    Decorador que registra em console a data, hora e tipo de uma transação
-    no momento em que ela é executada.
+    MODIFICADO: Decorador que salva em um arquivo de log (log.txt)
+    as informações de uma função chamada: data, hora, nome, argumentos e retorno.
     """
     def wrapper(*args, **kwargs):
-       
-        conta = args[1]
-        transacao = args[2]
+        # 1. Captura a data e hora atuais
+        timestamp = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
         
-        resultado = funcao(*args, **kwargs) 
-       
-        if transacao.__class__.__name__ in [t['tipo'] for t in conta.historico.transacoes]:
-             print(
-                f"--- LOG: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')} | "
-                f"Transação '{transacao.__class__.__name__}' executada para a conta {conta.numero}. ---"
-             )
+        # 2. Captura o nome da função
+        nome_funcao = funcao.__name__
+        
+        # Executa a função original para obter o resultado
+        resultado = funcao(*args, **kwargs)
+        
+        # 3. Captura os argumentos da função (formatando para leitura)
+        # Usamos repr() para ter uma representação fiel dos objetos
+        args_formatados = ", ".join(repr(a) for a in args)
+        kwargs_formatados = ", ".join(f"{k}={v!r}" for k, v in kwargs.items())
+        argumentos_completos = ", ".join(filter(None, [args_formatados, kwargs_formatados]))
+
+        # 4. Captura o valor retornado pela função
+        valor_retornado = repr(resultado)
+
+        # Monta a string de log completa
+        log_entry = (
+            f"Data/Hora: {timestamp} | "
+            f"Função: {nome_funcao} | "
+            f"Argumentos: ({argumentos_completos}) | "
+            f"Retorno: {valor_retornado}\n" # 7. Garante a nova linha
+        )
+        
+        try:
+            # 5 e 6. Abre 'log.txt' em modo de 'append' (adicionar ao final)
+            with open("log.txt", "a", encoding="utf-8") as arquivo_log:
+                arquivo_log.write(log_entry)
+        except Exception as e:
+            print(f"--- ERRO CRÍTICO AO GRAVAR LOG: {e} ---")
+
         return resultado
     return wrapper
+
 
 # --- Efeitos Sonoros (mantidos do código original) ---
 
 def tocar_sucesso():
     """Toca um som de sucesso."""
-    winsound.Beep(1000, 200)
-    winsound.Beep(1200, 200)
+    # O winsound só funciona no Windows. Em outros sistemas, isso pode gerar um erro.
+    # Adicionamos um try-except para evitar que o programa quebre.
+    try:
+        winsound.Beep(1000, 200)
+        winsound.Beep(1200, 200)
+    except ImportError:
+        pass # Ignora o erro se a biblioteca não for encontrada
 
 def tocar_erro():
     """Toca um som de erro."""
-    winsound.Beep(400, 400)
+    try:
+        winsound.Beep(400, 400)
+    except ImportError:
+        pass
 
 def tocar_despedida():
     """Toca um som de despedida."""
-    winsound.Beep(1000, 300)
-    winsound.Beep(800, 300)
+    try:
+        winsound.Beep(1000, 300)
+        winsound.Beep(800, 300)
+    except ImportError:
+        pass
 
 # --- Modelagem das Classes (Baseado no UML) ---
 
@@ -61,7 +95,6 @@ class Historico:
             }
         )
 
-    # --- NOVO: Gerador de Relatórios ---
     def gerar_relatorio(self, tipo_transacao=None):
         """
         Gera um relatório de transações, opcionalmente filtrado por tipo.
@@ -91,6 +124,9 @@ class Deposito(Transacao):
     @property
     def valor(self):
         return self._valor
+    
+    def __repr__(self):
+        return f"Deposito(valor={self.valor})"
 
     def registrar(self, conta):
         if conta.depositar(self.valor):
@@ -104,6 +140,9 @@ class Saque(Transacao):
     @property
     def valor(self):
         return self._valor
+    
+    def __repr__(self):
+        return f"Saque(valor={self.valor})"
 
     def registrar(self, conta):
         if conta.sacar(self.valor):
@@ -117,6 +156,9 @@ class Conta:
         self._agencia = "0001"
         self._cliente = cliente
         self._historico = Historico()
+
+    def __repr__(self):
+        return f"<Conta(numero={self.numero}, cliente='{self.cliente.nome}')>"
 
     @classmethod
     def nova_conta(cls, cliente, numero):
@@ -204,14 +246,18 @@ class Cliente:
     def __init__(self, endereco):
         self.endereco = endereco
         self.contas = []
+        # Adicionado para que o objeto Cliente tenha um nome para o log
+        self.nome = "Cliente sem nome definido"
 
-    # --- ALTERADO: Decorador e limite diário aplicados ---
+    def __repr__(self):
+        return f"<Cliente(nome='{self.nome}')>"
+
+    # Decorador aplicado na função que efetivamente faz o registro da transação
     @log_transacao
     def realizar_transacao(self, conta, transacao):
         """
         Inicia o processo de uma transação, agora com validação de limite diário.
         """
-        # --- NOVO: Validação do limite de 10 transações diárias ---
         hoje = datetime.now().date()
         transacoes_hoje = [
             t for t in conta.historico.transacoes
@@ -236,6 +282,10 @@ class PessoaFisica(Cliente):
         self.data_nascimento = data_nascimento
         self.cpf = cpf
 
+    def __repr__(self):
+        return f"<PessoaFisica(nome='{self.nome}', cpf='{self.cpf}')>"
+
+
 # --- Funções do Menu (Adaptadas para usar Classes) ---
 
 def menu_deposito(cliente):
@@ -245,7 +295,6 @@ def menu_deposito(cliente):
         tocar_erro()
         return
 
-    # Neste modelo simplificado, operamos na primeira conta do cliente.
     conta_ativa = cliente.contas[0]
 
     try:
@@ -271,7 +320,6 @@ def menu_saque(cliente):
         valor = float(input("🔴 Valor do saque: R$ "))
         saque = Saque(valor)
         cliente.realizar_transacao(conta_ativa, saque)
-        # O som de sucesso já é tocado dentro do método sacar da conta
     except ValueError:
         print("❌ Digite um valor numérico válido.")
         tocar_erro()
@@ -298,8 +346,6 @@ def menu_exibir_extrato(cliente):
     print("🔷============================🔷\n")
 
 
-
-# --- NOVO: Função para o menu do Gerador de Relatórios ---
 def menu_gerar_relatorio(cliente):
     """
     Exibe um relatório de transações usando o gerador, com opção de filtro.
@@ -322,11 +368,6 @@ def menu_gerar_relatorio(cliente):
 
     print("\n📑 === RELATÓRIO DE TRANSAÇÕES === 📑")
     
-
-
-    # Utiliza o gerador para obter as transações
-
-
     relatorio = conta_ativa.historico.gerar_relatorio(filtro)
     
     houve_transacao = False
@@ -382,7 +423,7 @@ def criar_nova_conta(numero_conta, clientes, contas):
 
 def filtrar_cliente(cpf, clientes):
     """Busca um cliente na lista pelo CPF."""
-    clientes_filtrados = [cliente for cliente in clientes if cliente.cpf == cpf]
+    clientes_filtrados = [cliente for cliente in clientes if isinstance(cliente, PessoaFisica) and cliente.cpf == cpf]
     return clientes_filtrados[0] if clientes_filtrados else None
 
 def login(clientes):
@@ -402,14 +443,11 @@ def login(clientes):
     return None
 
 
-#execução do sistema
-
 def main():
     """Função principal que executa o sistema bancário."""
     clientes = []
     contas = []
     
-    # Login/Criação de Usuário
     cliente_logado = None
     while not cliente_logado:
         print("""
@@ -455,11 +493,10 @@ def main():
             menu_saque(cliente_logado)
         elif opcao == "e":
             menu_exibir_extrato(cliente_logado)
-        # --- NOVO: Chamada para a função do relatório ---
         elif opcao == "r":
             menu_gerar_relatorio(cliente_logado)
         elif opcao == "u":
-            criar_novo_cliente(clientes)
+            criar_novo_cliente(clientes) 
         elif opcao == "c":
             numero_conta = len(contas) + 1
             criar_nova_conta(numero_conta, clientes, contas)
